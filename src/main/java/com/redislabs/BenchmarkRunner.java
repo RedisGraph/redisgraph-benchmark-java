@@ -62,7 +62,7 @@ public class BenchmarkRunner implements Runnable {
     public void run() {
         int requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
-        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder().connectionTimeoutMillis(timeout).password(password).build();
+        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder().socketTimeoutMillis(timeout).connectionTimeoutMillis(timeout).password(password).build();
         HostAndPort hap = new HostAndPort(hostname,port);
         UnifiedJedis uredis = new UnifiedJedis( hap, clientConfig);
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
