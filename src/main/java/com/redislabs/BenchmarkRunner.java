@@ -46,6 +46,10 @@ public class BenchmarkRunner implements Runnable {
             description = "Max rps. If 0 no limit is applied and the DB is stressed up to maximum.", defaultValue = "0")
     private  Integer rps;
 
+    @Option(names = {"--timeout"},
+            description = "Jedis Pool timeout in millis", defaultValue = "300000")
+    private  Integer timeout;
+
     @Option(names = {"-n", "--number-requests"},
             description = "Number of requests.", defaultValue = "1000000")
     private  Integer numberRequests;
@@ -64,7 +68,7 @@ public class BenchmarkRunner implements Runnable {
         poolConfig.setMaxTotal(connections);
         poolConfig.setMaxIdle(connections);
         JedisPool pool = new JedisPool(poolConfig, hostname,
-                port, 2000, password);
+                port, timeout, password);
         RedisGraph rg = new RedisGraph(pool);
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
         ConcurrentHistogram graphInternalTime = new ConcurrentHistogram(900000000L, 3);
