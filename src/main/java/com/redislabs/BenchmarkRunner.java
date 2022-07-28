@@ -1,6 +1,7 @@
 package com.redislabs;
 
 import com.google.common.util.concurrent.RateLimiter;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import redis.clients.jedis.*;
@@ -62,9 +63,12 @@ public class BenchmarkRunner implements Runnable {
     public void run() {
         int requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
-        DefaultJedisClientConfig clientConfig = DefaultJedisClientConfig.builder().socketTimeoutMillis(timeout).connectionTimeoutMillis(timeout).password(password).build();
-        HostAndPort hap = new HostAndPort(hostname,port);
-        UnifiedJedis uredis = new UnifiedJedis( hap, clientConfig);
+        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+        poolConfig.setMaxTotal(connections);
+        poolConfig.setMaxIdle(connections);
+        JedisPool pool = new JedisPool(poolConfig, hostname,
+                port, timeout, password);
+        UnifiedJedis uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
         ConcurrentHistogram graphInternalTime = new ConcurrentHistogram(900000000L, 3);
 
