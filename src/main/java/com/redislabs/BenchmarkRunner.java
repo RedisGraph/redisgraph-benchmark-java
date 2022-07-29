@@ -63,11 +63,9 @@ public class BenchmarkRunner implements Runnable {
     public void run() {
         int requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
-        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig<Connection> poolConfig = new GenericObjectPoolConfig<>();
         poolConfig.setMaxTotal(connections);
         poolConfig.setMaxIdle(connections);
-        JedisPool pool = new JedisPool(poolConfig, hostname,
-                port, timeout, password);
         UnifiedJedis uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
         ConcurrentHistogram graphInternalTime = new ConcurrentHistogram(900000000L, 3);
