@@ -1,23 +1,20 @@
 package com.redislabs;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.redislabs.redisgraph.RedisGraph;
-import com.redislabs.redisgraph.ResultSet;
-import com.redislabs.redisgraph.Statistics;
-import com.sun.org.apache.xalan.internal.lib.ExsltStrings;
+import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.graph.ResultSet;
 import org.HdrHistogram.*;
-import com.google.common.util.concurrent.RateLimiter;
 
 public class ClientThread extends Thread {
     private final int requests;
-    private final RedisGraph rg;
+    private final UnifiedJedis rg;
     private final String query;
     private final String key;
     private final Histogram histogram;
     private final Histogram graphInternalHistogram;
     private final RateLimiter rateLimiter;
 
-    ClientThread(RedisGraph rg, Integer requests, String key, String query, ConcurrentHistogram histogram, ConcurrentHistogram graphInternalHistogram) {
+    ClientThread(UnifiedJedis rg, Integer requests, String key, String query, ConcurrentHistogram histogram, ConcurrentHistogram graphInternalHistogram) {
         super("Client thread");
         this.requests = requests;
         this.rg = rg;
@@ -28,7 +25,7 @@ public class ClientThread extends Thread {
         this.rateLimiter = null;
     }
 
-    ClientThread(RedisGraph rg, Integer requests, String key, String query, ConcurrentHistogram histogram, ConcurrentHistogram graphInternalHistogram, RateLimiter perClientRateLimiter) {
+    ClientThread(UnifiedJedis rg, Integer requests, String key, String query, ConcurrentHistogram histogram, ConcurrentHistogram graphInternalHistogram, RateLimiter perClientRateLimiter) {
         super("Client thread");
         this.requests = requests;
         this.rg = rg;
@@ -46,13 +43,12 @@ public class ClientThread extends Thread {
                 rateLimiter.acquire(1);
             }
             long startTime = System.nanoTime();
-            ResultSet resultSet = rg.query(key, query);
+            ResultSet resultSet = rg.graphQuery(key, query);
             long durationMicros = (System.nanoTime() - startTime) / 1000;
-            String splitted = resultSet.getStatistics().getStringValue(Statistics.Label.QUERY_INTERNAL_EXECUTION_TIME).split(" ")[0];
+            String splitted = resultSet.getStatistics().queryIntervalExecutionTime().split(" ")[0];
             double internalDuration = Double.parseDouble(splitted) * 1000;
             graphInternalHistogram.recordValue((long) internalDuration);
             histogram.recordValue(durationMicros);
         }
-//        System.out.println("My thread run is over");
     }
 }

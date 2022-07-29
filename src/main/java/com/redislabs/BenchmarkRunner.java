@@ -4,8 +4,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-import com.redislabs.redisgraph.impl.api.RedisGraph;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.*;
 import org.HdrHistogram.*;
 
 import java.util.ArrayList;
@@ -64,12 +63,10 @@ public class BenchmarkRunner implements Runnable {
     public void run() {
         int requestsPerClient = numberRequests / clients;
         int rpsPerClient = rps / clients;
-        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig<Connection> poolConfig = new GenericObjectPoolConfig<>();
         poolConfig.setMaxTotal(connections);
         poolConfig.setMaxIdle(connections);
-        JedisPool pool = new JedisPool(poolConfig, hostname,
-                port, timeout, password);
-        RedisGraph rg = new RedisGraph(pool);
+        UnifiedJedis uredis = new JedisPooled(poolConfig, hostname, port, timeout, password);
         ConcurrentHistogram histogram = new ConcurrentHistogram(900000000L, 3);
         ConcurrentHistogram graphInternalTime = new ConcurrentHistogram(900000000L, 3);
 
@@ -83,9 +80,9 @@ public class BenchmarkRunner implements Runnable {
             ClientThread clientThread;
             if (rps>0){
                 RateLimiter rateLimiter = RateLimiter.create(rpsPerClient);
-                clientThread = new ClientThread(rg.getContext(), requestsPerClient,key, query, histogram,graphInternalTime, rateLimiter);
+                clientThread = new ClientThread(uredis, requestsPerClient,key, query, histogram,graphInternalTime, rateLimiter);
             } else {
-                clientThread = new ClientThread(rg.getContext(), requestsPerClient,key, query, histogram,graphInternalTime);
+                clientThread = new ClientThread(uredis, requestsPerClient,key, query, histogram,graphInternalTime);
             }
             clientThread.start();
             threadsArray.add(clientThread);
